@@ -6,7 +6,7 @@ import { Header } from './components/Header';
 import { generateBuild } from './services/geminiService';
 import { BlockData, AppMode, BuildProject } from './types';
 import { exportToOBJ, generateInstructions } from './utils/exportUtils';
-import { Download, Printer, Share2, Hammer, Layers, RotateCcw, Search } from 'lucide-react';
+import { Download, Printer, Share2, Hammer, Layers, RotateCcw, Search, Quote } from 'lucide-react';
 
 const App: React.FC = () => {
   const [blocks, setBlocks] = useState<BlockData[]>([]);
@@ -31,7 +31,11 @@ const App: React.FC = () => {
 
   // Save gallery when updated
   useEffect(() => {
-    localStorage.setItem('nego_gallery', JSON.stringify(gallery));
+    try {
+        localStorage.setItem('nego_gallery', JSON.stringify(gallery));
+    } catch (e) {
+        console.error("Failed to save gallery - likely storage quota exceeded", e);
+    }
   }, [gallery]);
 
   const handleGenerate = async (text: string, imageBase64?: string, mimeType?: string) => {
@@ -48,7 +52,9 @@ const App: React.FC = () => {
           id: Date.now().toString(),
           name: text.slice(0, 20) || "Untitled Build",
           timestamp: Date.now(),
-          blocks: newBlocks
+          blocks: newBlocks,
+          originalPrompt: text,
+          originalImage: imageBase64 ? `data:${mimeType};base64,${imageBase64}` : undefined
         };
         setGallery(prev => [newProject, ...prev]);
       }
@@ -66,7 +72,7 @@ const App: React.FC = () => {
 
   const loadFromGallery = (project: BuildProject) => {
     setBlocks(project.blocks);
-    setLastPrompt(project.name);
+    setLastPrompt(project.originalPrompt || project.name);
     setMode(AppMode.BUILDER);
     setExploded(false);
   };
@@ -182,19 +188,32 @@ const App: React.FC = () => {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {filteredGallery.map((project) => (
-                    <div key={project.id} className="bg-white rounded-xl shadow-sm hover:shadow-md border border-slate-200 p-6 transition-all">
+                    <div key={project.id} className="bg-white rounded-xl shadow-sm hover:shadow-md border border-slate-200 p-6 transition-all flex flex-col h-full">
                        <div className="flex items-center justify-between mb-4">
-                         <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center">
-                            <div className="w-4 h-4 bg-yellow-400 rounded-sm"></div>
+                         <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center overflow-hidden relative">
+                            {project.originalImage ? (
+                                <img src={project.originalImage} alt="Reference" className="w-full h-full object-cover" />
+                            ) : (
+                                <div className="w-4 h-4 bg-yellow-400 rounded-sm"></div>
+                            )}
                          </div>
                          <span className="text-xs text-slate-400 font-mono">
                            {new Date(project.timestamp).toLocaleDateString()}
                          </span>
                        </div>
-                       <h3 className="text-lg font-bold text-slate-800 mb-2 line-clamp-1">{project.name}</h3>
-                       <p className="text-sm text-slate-500 mb-6">{project.blocks.length} Blocks</p>
+                       <h3 className="text-lg font-bold text-slate-800 mb-1 line-clamp-1">{project.name}</h3>
+                       <p className="text-xs text-slate-500 mb-3">{project.blocks.length} Blocks</p>
+
+                       {project.originalPrompt && (
+                           <div className="bg-slate-50 p-3 rounded-lg mb-4 flex-1">
+                                <Quote className="w-3 h-3 text-slate-300 mb-1" />
+                                <p className="text-xs text-slate-600 italic line-clamp-3">
+                                    "{project.originalPrompt}"
+                                </p>
+                           </div>
+                       )}
                        
-                       <div className="flex gap-2">
+                       <div className="flex gap-2 mt-auto">
                          <button 
                            onClick={() => loadFromGallery(project)}
                            className="flex-1 bg-slate-900 text-white py-2 rounded-lg text-sm font-bold hover:bg-slate-700"
@@ -206,6 +225,7 @@ const App: React.FC = () => {
                              setGallery(prev => prev.filter(p => p.id !== project.id));
                            }}
                            className="px-3 bg-red-50 text-red-500 rounded-lg hover:bg-red-100"
+                           title="Delete Build"
                          >
                            <RotateCcw className="w-4 h-4 transform rotate-45" />
                          </button>

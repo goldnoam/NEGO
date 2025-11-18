@@ -10,6 +10,8 @@ export interface BuildProject {
   name: string;
   timestamp: number;
   blocks: BlockData[];
+  originalPrompt: string;
+  originalImage?: string;
 }
 
 export enum AppMode {

@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Loader2, Upload, Image as ImageIcon, Wand2, Trash2 } from 'lucide-react';
+import { Loader2, Upload, Image as ImageIcon, Wand2, Trash2, X } from 'lucide-react';
 
 interface BuildControlsProps {
   onGenerate: (text: string, imageBase64?: string, mimeType?: string) => void;
@@ -110,13 +110,25 @@ export const BuildControls: React.FC<BuildControlsProps> = ({ onGenerate, isGene
       <form onSubmit={handleSubmit} className="space-y-3">
         <div>
           <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Instruction</label>
-          <textarea
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            placeholder="e.g., A small blue castle, A red racecar..."
-            className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none h-24 text-sm"
-            disabled={isGenerating}
-          />
+          <div className="relative">
+            <textarea
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              placeholder="e.g., A small blue castle, A red racecar..."
+              className="w-full p-3 pr-8 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none h-24 text-sm"
+              disabled={isGenerating}
+            />
+            {prompt && (
+              <button
+                type="button"
+                onClick={() => setPrompt('')}
+                className="absolute top-2 right-2 text-slate-400 hover:text-slate-600 bg-white/50 rounded-full p-1 transition-colors"
+                title="Clear text"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="flex gap-2">
