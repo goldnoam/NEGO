@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Scene3D } from './components/Scene3D';
 import { BuildControls } from './components/BuildControls';
@@ -5,7 +6,7 @@ import { Header } from './components/Header';
 import { generateBuild } from './services/geminiService';
 import { BlockData, AppMode, BuildProject } from './types';
 import { exportToOBJ, generateInstructions } from './utils/exportUtils';
-import { Download, Printer, Share2, Hammer, Layers, RotateCcw } from 'lucide-react';
+import { Download, Printer, Share2, Hammer, Layers, RotateCcw, Search } from 'lucide-react';
 
 const App: React.FC = () => {
   const [blocks, setBlocks] = useState<BlockData[]>([]);
@@ -14,6 +15,7 @@ const App: React.FC = () => {
   const [gallery, setGallery] = useState<BuildProject[]>([]);
   const [exploded, setExploded] = useState(false);
   const [lastPrompt, setLastPrompt] = useState("Initial");
+  const [searchTerm, setSearchTerm] = useState("");
 
   // Load gallery from local storage on mount
   useEffect(() => {
@@ -74,6 +76,10 @@ const App: React.FC = () => {
       const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
       window.open(url, '_blank');
   };
+
+  const filteredGallery = gallery.filter(project => 
+    project.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <div className="h-full flex flex-col font-sans text-slate-800 relative">
@@ -144,18 +150,38 @@ const App: React.FC = () => {
         {mode === AppMode.GALLERY && (
           <div className="h-full overflow-y-auto bg-slate-50 p-8">
             <div className="max-w-6xl mx-auto">
-              <h2 className="text-3xl font-black text-slate-800 mb-8 flex items-center gap-3">
-                <Layers className="w-8 h-8 text-blue-600" />
-                My Builds Gallery
-              </h2>
+              <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+                <h2 className="text-3xl font-black text-slate-800 flex items-center gap-3">
+                  <Layers className="w-8 h-8 text-blue-600" />
+                  My Builds Gallery
+                </h2>
+                
+                {gallery.length > 0 && (
+                  <div className="relative w-full md:w-72">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
+                    <input
+                      type="text"
+                      placeholder="Search builds..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm shadow-sm"
+                    />
+                  </div>
+                )}
+              </div>
               
               {gallery.length === 0 ? (
                 <div className="text-center py-20 text-slate-400">
                   <p className="text-xl">No builds yet. Go to Builder to create something!</p>
                 </div>
+              ) : filteredGallery.length === 0 ? (
+                 <div className="text-center py-20 text-slate-400">
+                  <Search className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <p className="text-xl">No builds match "{searchTerm}"</p>
+                </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {gallery.map((project) => (
+                  {filteredGallery.map((project) => (
                     <div key={project.id} className="bg-white rounded-xl shadow-sm hover:shadow-md border border-slate-200 p-6 transition-all">
                        <div className="flex items-center justify-between mb-4">
                          <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center">
