@@ -24,3 +24,5 @@ export interface GenerationParams {
   imageBase64?: string;
   mimeType?: string;
 }
+
+export type Theme = 'light' | 'dark';
