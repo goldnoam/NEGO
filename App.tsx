@@ -4,7 +4,7 @@ import { Scene3D } from './components/Scene3D';
 import { BuildControls } from './components/BuildControls';
 import { Header } from './components/Header';
 import { generateBuild } from './services/geminiService';
-import { BlockData, AppMode, BuildProject, Theme } from './types';
+import { BlockData, AppMode, BuildProject, Theme, Density } from './types';
 import { exportToOBJ, generateInstructions } from './utils/exportUtils';
 import { Download, Printer, Share2, Hammer, Layers, RotateCcw, Search, Quote } from 'lucide-react';
 
@@ -56,11 +56,11 @@ const App: React.FC = () => {
     setTheme(prev => prev === 'dark' ? 'light' : 'dark');
   };
 
-  const handleGenerate = async (text: string, imageBase64?: string, mimeType?: string) => {
+  const handleGenerate = async (text: string, density: Density, imageBase64?: string, mimeType?: string) => {
     setIsGenerating(true);
     setExploded(false);
     try {
-      const newBlocks = await generateBuild(text, imageBase64 ? { base64: imageBase64, mimeType: mimeType! } : undefined);
+      const newBlocks = await generateBuild(text, density, imageBase64 ? { base64: imageBase64, mimeType: mimeType! } : undefined);
       setBlocks(newBlocks);
       setLastPrompt(text || "Image Build");
       

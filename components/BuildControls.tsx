@@ -1,9 +1,10 @@
+
 import React, { useState, useRef } from 'react';
-import { Loader2, Upload, Image as ImageIcon, Wand2, Trash2, X } from 'lucide-react';
-import { Theme } from '../types';
+import { Loader2, Upload, Image as ImageIcon, Wand2, Trash2, X, BarChart3 } from 'lucide-react';
+import { Theme, Density } from '../types';
 
 interface BuildControlsProps {
-  onGenerate: (text: string, imageBase64?: string, mimeType?: string) => void;
+  onGenerate: (text: string, density: Density, imageBase64?: string, mimeType?: string) => void;
   isGenerating: boolean;
   onClear: () => void;
   theme: Theme;
@@ -12,6 +13,7 @@ interface BuildControlsProps {
 export const BuildControls: React.FC<BuildControlsProps> = ({ onGenerate, isGenerating, onClear, theme }) => {
   const [prompt, setPrompt] = useState('');
   const [selectedImage, setSelectedImage] = useState<{ base64: string; mimeType: string } | null>(null);
+  const [density, setDensity] = useState<Density>('medium');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
 
@@ -54,7 +56,7 @@ export const BuildControls: React.FC<BuildControlsProps> = ({ onGenerate, isGene
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!prompt && !selectedImage) return;
-    onGenerate(prompt, selectedImage?.base64, selectedImage?.mimeType);
+    onGenerate(prompt, density, selectedImage?.base64, selectedImage?.mimeType);
   };
 
   return (
@@ -144,7 +146,36 @@ export const BuildControls: React.FC<BuildControlsProps> = ({ onGenerate, isGene
           </div>
         </div>
 
-        <div className="flex gap-2">
+        {/* Density Control */}
+        <div>
+           <div className="flex items-center justify-between mb-1">
+                <label className={`block text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                    Block Density: <span className={isDark ? 'text-blue-400' : 'text-blue-600'}>{density}</span>
+                </label>
+                <BarChart3 className={`w-3 h-3 ${isDark ? 'text-slate-500' : 'text-slate-400'}`} />
+           </div>
+           <input 
+            type="range" 
+            min="0" 
+            max="2" 
+            step="1" 
+            value={density === 'low' ? 0 : density === 'medium' ? 1 : 2}
+            onChange={(e) => {
+                const val = parseInt(e.target.value);
+                setDensity(val === 0 ? 'low' : val === 1 ? 'medium' : 'high');
+            }}
+            className={`w-full h-2 rounded-lg appearance-none cursor-pointer
+                ${isDark ? 'bg-slate-700 accent-blue-500' : 'bg-slate-200 accent-blue-600'}`}
+            disabled={isGenerating}
+           />
+           <div className={`flex justify-between text-[10px] uppercase font-bold mt-1 ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>
+             <span>Low</span>
+             <span>Medium</span>
+             <span>High</span>
+           </div>
+        </div>
+
+        <div className="flex gap-2 pt-2">
           <button
             type="submit"
             disabled={isGenerating || (!prompt && !selectedImage)}

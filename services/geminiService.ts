@@ -1,5 +1,6 @@
+
 import { GoogleGenAI, Type, Schema } from "@google/genai";
-import { BlockData } from "../types";
+import { BlockData, Density } from "../types";
 
 const SYSTEM_INSTRUCTION = `
 You are "Nego", an AI architect engine that converts natural language descriptions or images into 3D voxel structures (tiny lego-like blocks).
@@ -7,11 +8,10 @@ Your goal is to output a JSON structure representing a 3D object built from 1x1x
 
 Rules:
 1. The grid is centered at 0,0,0.
-2. Coordinates (x, y, z) should generally be integers between -8 and 8 to keep the model compact but recognizable.
-3. Use vibrant, lego-like hex color codes (e.g., "#FF0000", "#0000FF", "#FFCC00").
-4. If the user asks for a specific object (e.g., "a red heart", "a castle"), approximate its shape with blocks.
-5. Ensure the structure is stable (connected) if possible.
-6. Output ONLY the JSON data as specified in the schema.
+2. Use vibrant, lego-like hex color codes (e.g., "#FF0000", "#0000FF", "#FFCC00").
+3. If the user asks for a specific object (e.g., "a red heart", "a castle"), approximate its shape with blocks.
+4. Ensure the structure is stable (connected) if possible.
+5. Output ONLY the JSON data as specified in the schema.
 `;
 
 const blockSchema: Schema = {
@@ -36,6 +36,7 @@ const blockSchema: Schema = {
 
 export const generateBuild = async (
   prompt: string, 
+  density: Density,
   imagePart?: { base64: string; mimeType: string }
 ): Promise<BlockData[]> => {
   const apiKey = process.env.API_KEY;
@@ -49,6 +50,20 @@ export const generateBuild = async (
     const contents: any = {};
     const parts: any[] = [];
 
+    let densityInstruction = "";
+    switch (density) {
+      case 'low':
+        densityInstruction = "Create a minimalist, simple structure with fewer blocks. Keep coordinates strictly within -5 to 5.";
+        break;
+      case 'high':
+        densityInstruction = "Create a highly detailed, dense, and solid structure with many blocks. You can use a larger coordinate range, up to -12 to 12.";
+        break;
+      case 'medium':
+      default:
+        densityInstruction = "Create a standard detailed structure. Keep coordinates generally within -8 to 8.";
+        break;
+    }
+
     if (imagePart) {
       parts.push({
         inlineData: {
@@ -57,11 +72,11 @@ export const generateBuild = async (
         },
       });
       parts.push({
-        text: "Analyze this image and reconstruct it as a 3D voxel sculpture using blocks. Output the block coordinates and colors.",
+        text: `Analyze this image and reconstruct it as a 3D voxel sculpture using blocks. Output the block coordinates and colors. ${densityInstruction}`,
       });
     } else {
       parts.push({
-        text: `Build instructions: ${prompt}. Create a creative voxel representation.`,
+        text: `Build instructions: ${prompt}. Create a creative voxel representation. ${densityInstruction}`,
       });
     }
     

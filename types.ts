@@ -1,3 +1,4 @@
+
 export interface BlockData {
   x: number;
   y: number;
@@ -23,6 +24,8 @@ export interface GenerationParams {
   prompt?: string;
   imageBase64?: string;
   mimeType?: string;
+  density: Density;
 }
 
 export type Theme = 'light' | 'dark';
+export type Density = 'low' | 'medium' | 'high';
