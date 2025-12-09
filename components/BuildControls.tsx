@@ -1,6 +1,6 @@
 
 import React, { useState, useRef } from 'react';
-import { Loader2, Upload, Image as ImageIcon, Wand2, Trash2, X, BarChart3 } from 'lucide-react';
+import { Loader2, Upload, Image as ImageIcon, Wand2, Trash2, X, BarChart3, Undo2, Redo2, MousePointerClick } from 'lucide-react';
 import { Theme, Density } from '../types';
 
 interface BuildControlsProps {
@@ -8,9 +8,15 @@ interface BuildControlsProps {
   isGenerating: boolean;
   onClear: () => void;
   theme: Theme;
+  canUndo: boolean;
+  canRedo: boolean;
+  onUndo: () => void;
+  onRedo: () => void;
 }
 
-export const BuildControls: React.FC<BuildControlsProps> = ({ onGenerate, isGenerating, onClear, theme }) => {
+export const BuildControls: React.FC<BuildControlsProps> = ({ 
+    onGenerate, isGenerating, onClear, theme, canUndo, canRedo, onUndo, onRedo 
+}) => {
   const [prompt, setPrompt] = useState('');
   const [selectedImage, setSelectedImage] = useState<{ base64: string; mimeType: string } | null>(null);
   const [density, setDensity] = useState<Density>('medium');
@@ -146,7 +152,6 @@ export const BuildControls: React.FC<BuildControlsProps> = ({ onGenerate, isGene
           </div>
         </div>
 
-        {/* Density Control */}
         <div>
            <div className="flex items-center justify-between mb-1">
                 <label className={`block text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
@@ -175,7 +180,48 @@ export const BuildControls: React.FC<BuildControlsProps> = ({ onGenerate, isGene
            </div>
         </div>
 
-        <div className="flex gap-2 pt-2">
+        {/* Tools and Actions */}
+        <div className="flex gap-2 pt-2 border-t border-slate-200/10 mt-2">
+            <button
+                type="button"
+                onClick={onUndo}
+                disabled={!canUndo || isGenerating}
+                className={`p-2 rounded-lg transition-colors flex items-center justify-center
+                    ${isDark 
+                        ? 'bg-slate-700 hover:bg-slate-600 text-slate-300 disabled:opacity-50' 
+                        : 'bg-slate-100 hover:bg-slate-200 text-slate-600 disabled:opacity-50'}`}
+                title="Undo (Ctrl+Z)"
+            >
+                <Undo2 className="w-5 h-5" />
+            </button>
+            <button
+                type="button"
+                onClick={onRedo}
+                disabled={!canRedo || isGenerating}
+                className={`p-2 rounded-lg transition-colors flex items-center justify-center
+                    ${isDark 
+                        ? 'bg-slate-700 hover:bg-slate-600 text-slate-300 disabled:opacity-50' 
+                        : 'bg-slate-100 hover:bg-slate-200 text-slate-600 disabled:opacity-50'}`}
+                title="Redo (Ctrl+Y)"
+            >
+                <Redo2 className="w-5 h-5" />
+            </button>
+            <button
+            type="button"
+            onClick={onClear}
+            disabled={isGenerating}
+            className={`p-2 rounded-lg border transition-colors flex-1 flex items-center justify-center gap-2
+                ${isDark 
+                    ? 'bg-slate-700 hover:bg-red-900/30 text-slate-400 hover:text-red-400 border-slate-600' 
+                    : 'bg-slate-100 hover:bg-red-50 text-slate-600 hover:text-red-600 border-slate-200'}`}
+            title="Clear Scene"
+          >
+            <Trash2 className="w-4 h-4" />
+            <span className="text-sm font-semibold">Clear</span>
+          </button>
+        </div>
+
+        <div className="flex gap-2">
           <button
             type="submit"
             disabled={isGenerating || (!prompt && !selectedImage)}
@@ -197,19 +243,11 @@ export const BuildControls: React.FC<BuildControlsProps> = ({ onGenerate, isGene
               </>
             )}
           </button>
-          
-          <button
-            type="button"
-            onClick={onClear}
-            disabled={isGenerating}
-            className={`p-3 rounded-lg border transition-colors
-                ${isDark 
-                    ? 'bg-slate-700 hover:bg-red-900/30 text-slate-400 hover:text-red-400 border-slate-600' 
-                    : 'bg-slate-100 hover:bg-red-50 text-slate-600 hover:text-red-600 border-slate-200'}`}
-            title="Clear Scene"
-          >
-            <Trash2 className="w-5 h-5" />
-          </button>
+        </div>
+        
+        <div className={`text-[10px] text-center flex items-center justify-center gap-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+            <MousePointerClick className="w-3 h-3" />
+            <span>Click to Delete &bull; Alt+Click to Add Block</span>
         </div>
       </form>
     </div>

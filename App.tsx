@@ -7,16 +7,20 @@ import { generateBuild } from './services/geminiService';
 import { BlockData, AppMode, BuildProject, Theme, Density } from './types';
 import { exportToOBJ, generateInstructions } from './utils/exportUtils';
 import { Download, Printer, Share2, Hammer, Layers, RotateCcw, Search, Quote } from 'lucide-react';
+import { useHistory } from './hooks/useHistory';
+import * as THREE from 'three';
 
 const App: React.FC = () => {
-  const [blocks, setBlocks] = useState<BlockData[]>([]);
+  // Use custom history hook instead of simple state
+  const { state: blocks, setState: setBlocks, undo, redo, canUndo, canRedo, clear: clearBlocks } = useHistory<BlockData[]>([]);
+  
   const [isGenerating, setIsGenerating] = useState(false);
   const [mode, setMode] = useState<AppMode>(AppMode.BUILDER);
   const [gallery, setGallery] = useState<BuildProject[]>([]);
   const [exploded, setExploded] = useState(false);
   const [lastPrompt, setLastPrompt] = useState("Initial");
   const [searchTerm, setSearchTerm] = useState("");
-  const [theme, setTheme] = useState<Theme>('dark'); // Default to dark
+  const [theme, setTheme] = useState<Theme>('dark');
 
   // Load theme from local storage
   useEffect(() => {
@@ -52,6 +56,25 @@ const App: React.FC = () => {
     }
   }, [gallery]);
 
+  // Keyboard shortcuts for undo/redo
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+        if ((e.metaKey || e.ctrlKey) && e.key === 'z') {
+            e.preventDefault();
+            if (e.shiftKey) {
+                if (canRedo) redo();
+            } else {
+                if (canUndo) undo();
+            }
+        } else if ((e.metaKey || e.ctrlKey) && e.key === 'y') {
+            e.preventDefault();
+            if (canRedo) redo();
+        }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [undo, redo, canUndo, canRedo]);
+
   const toggleTheme = () => {
     setTheme(prev => prev === 'dark' ? 'light' : 'dark');
   };
@@ -61,7 +84,9 @@ const App: React.FC = () => {
     setExploded(false);
     try {
       const newBlocks = await generateBuild(text, density, imageBase64 ? { base64: imageBase64, mimeType: mimeType! } : undefined);
-      setBlocks(newBlocks);
+      
+      // Update history with new generation
+      clearBlocks(newBlocks);
       setLastPrompt(text || "Image Build");
       
       // Auto-save to gallery if successful
@@ -83,13 +108,39 @@ const App: React.FC = () => {
     }
   };
 
+  const handleBlockInteraction = (targetBlock: BlockData, faceNormal: THREE.Vector3 = new THREE.Vector3(0,1,0), isAlt: boolean = false) => {
+      if (exploded) return; // Disable editing while exploded
+
+      if (isAlt) {
+          // Add Block
+          const newBlock: BlockData = {
+              x: targetBlock.x + Math.round(faceNormal.x),
+              y: targetBlock.y + Math.round(faceNormal.y),
+              z: targetBlock.z + Math.round(faceNormal.z),
+              color: targetBlock.color // Duplicate color of the block being clicked
+          };
+          
+          // Check for duplicates
+          const exists = blocks.some(b => b.x === newBlock.x && b.y === newBlock.y && b.z === newBlock.z);
+          if (!exists) {
+            setBlocks([...blocks, newBlock]);
+          }
+      } else {
+          // Remove Block
+          const newBlocks = blocks.filter(b => 
+              !(b.x === targetBlock.x && b.y === targetBlock.y && b.z === targetBlock.z)
+          );
+          setBlocks(newBlocks);
+      }
+  };
+
   const handleClear = () => {
-    setBlocks([]);
+    clearBlocks([]);
     setExploded(false);
   };
 
   const loadFromGallery = (project: BuildProject) => {
-    setBlocks(project.blocks);
+    clearBlocks(project.blocks);
     setLastPrompt(project.originalPrompt || project.name);
     setMode(AppMode.BUILDER);
     setExploded(false);
@@ -115,7 +166,12 @@ const App: React.FC = () => {
         {mode === AppMode.BUILDER && (
           <>
             <div className="absolute inset-0 z-0">
-              <Scene3D blocks={blocks} exploded={exploded} theme={theme} />
+              <Scene3D 
+                blocks={blocks} 
+                exploded={exploded} 
+                theme={theme} 
+                onBlockClick={handleBlockInteraction}
+              />
             </div>
 
             {/* Input Panel */}
@@ -125,6 +181,10 @@ const App: React.FC = () => {
                 isGenerating={isGenerating} 
                 onClear={handleClear}
                 theme={theme}
+                canUndo={canUndo}
+                canRedo={canRedo}
+                onUndo={undo}
+                onRedo={redo}
               />
               
               {blocks.length > 0 && (
